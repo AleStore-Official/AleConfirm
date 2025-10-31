@@ -58,18 +58,23 @@
       'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhzeXlyY2JpYm9od3ZidXd4d29rIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjEwNjE0MDcsImV4cCI6MjA3NjYzNzQwN30.2KsFsGYjwf_cA7Z9oglVthiaE1_jWYuQ6HMMm5UXsyo'
     );
 
-    const userData = JSON.parse(localStorage.getItem("pending_user"));
+    (async () => {
+      const userData = JSON.parse(localStorage.getItem("pending_user"));
 
-    if (userData) {
-      const { nome, cognome, email, password } = userData;
-      await supabase.from("utenti").insert({ nome, cognome, email, password });
-      localStorage.removeItem("pending_user");
-      localStorage.setItem("user_verified", "true");
-    }
+      if (userData) {
+        const { nome, cognome, email, password } = userData;
+        const { error } = await supabase.from("utenti").insert({ nome, cognome, email, password });
 
-    setTimeout(() => {
-      window.location.href = "https://alestore-official.github.io/AleLogin";
-    }, 2000);
+        if (!error) {
+          localStorage.setItem("user_verified", "true");
+          localStorage.removeItem("pending_user");
+        }
+      }
+
+      setTimeout(() => {
+        window.location.href = "https://alestore-official.github.io/AleLogin";
+      }, 2000);
+    })();
   </script>
 </body>
 </html>

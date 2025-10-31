@@ -64,7 +64,7 @@
       if (userData) {
         const { nome, cognome, email, password } = userData;
 
-        // Verifica che l'email non sia già presente
+        // Verifica se l'email è già presente
         const { data: existing, error: checkError } = await supabase
           .from("utenti")
           .select("email")
@@ -86,7 +86,7 @@
             console.error("Errore nell'inserimento:", error.message);
           }
         } else {
-          console.log("Email già presente, nessun inserimento effettuato.");
+          // L'utente esiste già, ma confermiamo comunque
           localStorage.setItem("user_verified", "true");
           localStorage.removeItem("pending_user");
         }

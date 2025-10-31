@@ -35,6 +35,16 @@
   </style>
 </head>
 <body>
+  <script>
+    (function () {
+      const verified = localStorage.getItem("access_verified");
+      if (verified !== "true") {
+        localStorage.setItem("origin_page", window.location.href);
+        window.location.href = "https://alestore-official.github.io/AleCAPTCHA";
+      }
+    })();
+  </script>
+
   <div class="box">
     <h2>✅ Registration Confirmed</h2>
     <p>Redirecting to login...</p>
@@ -54,6 +64,7 @@
       const { nome, cognome, email, password } = userData;
       await supabase.from("utenti").insert({ nome, cognome, email, password });
       localStorage.removeItem("pending_user");
+      localStorage.setItem("user_verified", "true");
     }
 
     setTimeout(() => {

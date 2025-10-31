@@ -63,9 +63,30 @@
 
       if (userData) {
         const { nome, cognome, email, password } = userData;
-        const { error } = await supabase.from("utenti").insert({ nome, cognome, email, password });
 
-        if (!error) {
+        // Verifica che l'email non sia già presente
+        const { data: existing, error: checkError } = await supabase
+          .from("utenti")
+          .select("email")
+          .eq("email", email);
+
+        if (checkError) {
+          console.error("Errore nel controllo email:", checkError.message);
+        }
+
+        if (!existing || existing.length === 0) {
+          const { error } = await supabase
+            .from("utenti")
+            .insert({ nome, cognome, email, password });
+
+          if (!error) {
+            localStorage.setItem("user_verified", "true");
+            localStorage.removeItem("pending_user");
+          } else {
+            console.error("Errore nell'inserimento:", error.message);
+          }
+        } else {
+          console.log("Email già presente, nessun inserimento effettuato.");
           localStorage.setItem("user_verified", "true");
           localStorage.removeItem("pending_user");
         }

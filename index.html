@@ -2,68 +2,92 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Confirm Registration</title>
+  <title>Confirm your code</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <script src="https://alestore-official.github.io/control.js"></script>
   <style>
     body {
-      margin: 0;
-      padding: 0;
-      background-color: #f4f4f4;
+      background: #f4f4f4;
       font-family: 'Segoe UI', sans-serif;
       display: flex;
       justify-content: center;
       align-items: center;
       height: 100vh;
+      margin: 0;
     }
     .box {
-      background-color: #fff;
+      background: #fff;
       padding: 40px;
       border-radius: 12px;
       box-shadow: 0 4px 12px rgba(0,0,0,0.1);
       text-align: center;
-      width: 100%;
       max-width: 400px;
+      width: 100%;
     }
-    h2 {
-      margin-bottom: 20px;
-      color: #333;
-    }
-    p {
+    input, button {
+      width: 100%;
+      padding: 12px;
+      margin: 10px 0;
       font-size: 16px;
-      color: #555;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+    }
+    button {
+      background: #28a745;
+      color: #fff;
+      border: none;
+      cursor: pointer;
+    }
+    button:hover {
+      background: #218838;
     }
   </style>
 </head>
 <body>
   <div class="box">
-    <h2>✅ Registration Confirmed</h2>
-    <p>Redirecting to login...</p>
+    <h2>Enter your 6-digit code</h2>
+    <form id="form">
+      <input type="text" name="code" placeholder="Verification Code" required />
+      <button type="submit">Confirm</button>
+    </form>
   </div>
 
   <script type="module">
     import { createClient } from 'https://esm.sh/@supabase/supabase-js';
-
     const supabase = createClient(
       'https://hsyyrcbibohwvbuwxwok.supabase.co',
       'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhzeXlyY2JpYm9od3ZidXd4d29rIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjEwNjE0MDcsImV4cCI6MjA3NjYzNzQwN30.2KsFsGYjwf_cA7Z9oglVthiaE1_jWYuQ6HMMm5UXsyo'
     );
 
-    const { data: { user } } = await supabase.auth.getUser();
-
-    if (user?.email_confirmed_at) {
+    const form = document.getElementById("form");
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const code = form.code.value.trim();
       const pending = JSON.parse(localStorage.getItem("pending_user"));
-      if (pending && pending.email === user.email) {
-        const { nome, cognome } = pending;
-        await supabase.from("utenti").insert({ nome, cognome, email: user.email });
-        localStorage.setItem("user_verified", "true");
-        localStorage.removeItem("pending_user");
-      }
-    }
+      if (!pending) return alert("Missing user data.");
 
-    setTimeout(() => {
-      window.location.href = "https://alestore-official.github.io/AleLogin";
-    }, 2000);
+      const { data, error } = await supabase
+        .from("verification_codes")
+        .select("*")
+        .eq("email", pending.email)
+        .eq("code", code)
+        .gte("expires_at", new Date().toISOString())
+        .single();
+
+      if (data) {
+        await supabase.from("users").insert({
+          first_name: pending.firstName,
+          last_name: pending.lastName,
+          email: pending.email,
+          password: pending.password
+        });
+        localStorage.setItem("user_verified", "true");
+        alert("✅ Verification successful!");
+        window.location.href = "https://alestore-official.github.io/AleLogin";
+      } else {
+        alert("❌ Invalid or expired code.");
+      }
+    });
   </script>
 </body>
 </html>

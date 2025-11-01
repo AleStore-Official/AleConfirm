@@ -4,35 +4,6 @@
   <meta charset="UTF-8" />
   <title>Confirm Registration</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <style>
-    body {
-      margin: 0;
-      padding: 0;
-      background-color: #f4f4f4;
-      font-family: 'Segoe UI', sans-serif;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      height: 100vh;
-    }
-    .box {
-      background-color: #fff;
-      padding: 40px;
-      border-radius: 12px;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-      text-align: center;
-      width: 100%;
-      max-width: 400px;
-    }
-    h2 {
-      margin-bottom: 20px;
-      color: #333;
-    }
-    p {
-      font-size: 16px;
-      color: #555;
-    }
-  </style>
 </head>
 <body>
   <script>
@@ -45,57 +16,29 @@
     })();
   </script>
 
-  <div class="box">
-    <h2>✅ Registration Confirmed</h2>
-    <p>Redirecting to login...</p>
-  </div>
+  <h2>✅ Registration Confirmed</h2>
+  <p>Redirecting to login...</p>
 
   <script type="module">
     import { createClient } from 'https://esm.sh/@supabase/supabase-js';
 
-    const supabase = createClient(
-      'https://hsyyrcbibohwvbuwxwok.supabase.co',
-      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhzeXlyY2JpYm9od3ZidXd4d29rIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjEwNjE0MDcsImV4cCI6MjA3NjYzNzQwN30.2KsFsGYjwf_cA7Z9oglVthiaE1_jWYuQ6HMMm5UXsyo'
-    );
+    const supabase = createClient('https://hsyyrcbibohwvbuwxwok.supabase.co', 'YOUR_ANON_KEY');
 
-    (async () => {
-      const userData = JSON.parse(localStorage.getItem("pending_user"));
+    const { data: { user } } = await supabase.auth.getUser();
 
-      if (userData) {
-        const { nome, cognome, email, password } = userData;
-
-        // Verifica se l'email è già presente
-        const { data: existing, error: checkError } = await supabase
-          .from("utenti")
-          .select("email")
-          .eq("email", email);
-
-        if (checkError) {
-          console.error("Errore nel controllo email:", checkError.message);
-        }
-
-        if (!existing || existing.length === 0) {
-          const { error } = await supabase
-            .from("utenti")
-            .insert({ nome, cognome, email, password });
-
-          if (!error) {
-            localStorage.setItem("user_verified", "true");
-            localStorage.removeItem("pending_user");
-          } else {
-            console.error("Errore nell'inserimento:", error.message);
-          }
-        } else {
-          // L'utente esiste già, ma confermiamo comunque
-          localStorage.setItem("user_verified", "true");
-          localStorage.removeItem("pending_user");
-        }
+    if (user?.email_confirmed_at) {
+      const pending = JSON.parse(localStorage.getItem("pending_user"));
+      if (pending && pending.email === user.email) {
+        const { nome, cognome } = pending;
+        await supabase.from("utenti").insert({ nome, cognome, email: user.email });
+        localStorage.setItem("user_verified", "true");
+        localStorage.removeItem("pending_user");
       }
+    }
 
-      setTimeout(() => {
-        window.location.href = "https://alestore-official.github.io/AleLogin";
-      }, 2000);
-    })();
+    setTimeout(() => {
+      window.location.href = "https://alestore-official.github.io/AleLogin";
+    }, 2000);
   </script>
 </body>
 </html>

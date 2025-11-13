@@ -4,46 +4,80 @@
   <meta charset="UTF-8" />
   <title>Email Confirmation - AleStore</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    body {
+      background: linear-gradient(135deg, #d0f0ff, #fbeaff);
+      font-family: 'Segoe UI', sans-serif;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      margin: 0;
+      overflow: hidden;
+    }
+
+    .glass-box {
+      background: rgba(255,255,255,0.12);
+      border: 1px solid rgba(255,255,255,0.25);
+      border-radius: 20px;
+      padding: 40px;
+      box-shadow: 0 4px 30px rgba(0,0,0,0.1),
+                  inset 0 0 0.5px rgba(255,255,255,0.4);
+      backdrop-filter: blur(16px);
+      max-width: 400px;
+      width: 90%;
+      text-align: center;
+    }
+
+    h2 {
+      margin-bottom: 20px;
+      color: #222;
+      font-weight: 600;
+    }
+  </style>
 </head>
 <body>
-  <h2>Verifying your email...</h2>
+  <div class="glass-box">
+    <h2>Verifying your email...</h2>
+  </div>
+
   <script type="module">
     import { createClient } from 'https://esm.sh/@supabase/supabase-js';
+
     const supabase = createClient(
       'https://hsyyrcbibohwvbuwxwok.supabase.co',
       'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhzeXlyY2JpYm9od3ZidXd4d29rIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjEwNjE0MDcsImV4cCI6MjA3NjYzNzQwN30.2KsFsGYjwf_cA7Z9oglVthiaE1_jWYuQ6HMMm5UXsyo'
     );
 
-    const pending = JSON.parse(localStorage.getItem("pending_user") || "{}");
+    async function confirmEmail() {
+      const { data, error } = await supabase.auth.getUser();
 
-    if (!pending.email || !pending.password || !pending.firstName || !pending.lastName) {
-      window.location.href = "https://alestore-official.github.io/AleRegister";
-    }
-
-    (async () => {
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email: pending.email,
-        password: pending.password
-      });
-
-      if (error || !data.user.email_confirmed_at) {
+      if (error || !data?.user?.email_confirmed_at) {
+        alert("Email confirmation failed. Please try again.");
         window.location.href = "https://alestore-official.github.io/AleRegister";
         return;
       }
 
-      const { error: insertError } = await supabase
-        .from("utenti")
-        .insert([{ email: pending.email, firstName: pending.firstName, lastName: pending.lastName }]);
+      const pendingUser = JSON.parse(localStorage.getItem("pending_user") || "{}");
 
-      if (!insertError) {
-        localStorage.setItem("user_verified", "true");
-        localStorage.removeItem("pending_user");
-        const origin = localStorage.getItem("origin_page") || "https://alestore-official.github.io/AleLogin";
-        window.location.href = origin;
-      } else {
-        window.location.href = "https://alestore-official.github.io/AleRegister";
+      if (pendingUser.email) {
+        await supabase.from("utenti").insert({
+          firstName: pendingUser.firstName,
+          lastName: pendingUser.lastName,
+          email: pendingUser.email
+        });
       }
-    })();
+
+      localStorage.setItem("user_verified", "true");
+      localStorage.setItem("user_email", pendingUser.email);
+      localStorage.setItem("user_firstName", pendingUser.firstName);
+      localStorage.setItem("user_lastName", pendingUser.lastName);
+
+      alert("Email confirmed successfully!");
+      window.location.href = "https://alestore-official.github.io/AleLogin";
+    }
+
+    confirmEmail();
   </script>
 </body>
 </html>

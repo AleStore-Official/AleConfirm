@@ -2,11 +2,11 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Email Confirmation - AleStore</title>
+  <title>Email Confirmation</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <style>
     body {
-      background: linear-gradient(135deg, #d0f0ff, #fbeaff);
+      background: linear-gradient(135deg, #e0f7fa, #fce4ec);
       font-family: 'Segoe UI', sans-serif;
       display: flex;
       justify-content: center;
@@ -17,67 +17,84 @@
     }
 
     .glass-box {
-      background: rgba(255,255,255,0.12);
-      border: 1px solid rgba(255,255,255,0.25);
-      border-radius: 20px;
+      background: rgba(255, 255, 255, 0.15);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border-radius: 16px;
       padding: 40px;
-      box-shadow: 0 4px 30px rgba(0,0,0,0.1),
-                  inset 0 0 0.5px rgba(255,255,255,0.4);
-      backdrop-filter: blur(16px);
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
       max-width: 400px;
-      width: 90%;
+      width: 100%;
+      animation: fadeInUp 0.8s ease-out;
       text-align: center;
     }
 
     h2 {
       margin-bottom: 20px;
-      color: #222;
-      font-weight: 600;
+      color: #333;
+    }
+
+    p {
+      font-size: 16px;
+      color: #555;
+    }
+
+    .error {
+      color: #d9534f;
+      font-weight: bold;
+      margin-top: 10px;
+    }
+
+    @keyframes fadeInUp {
+      from {
+        opacity: 0;
+        transform: translateY(30px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
     }
   </style>
 </head>
 <body>
   <div class="glass-box">
-    <h2>Verifying your email...</h2>
+    <h2>✅ Email Confirmed</h2>
+    <p id="message">Redirecting to login...</p>
   </div>
 
   <script type="module">
     import { createClient } from 'https://esm.sh/@supabase/supabase-js';
-
     const supabase = createClient(
       'https://hsyyrcbibohwvbuwxwok.supabase.co',
       'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhzeXlyY2JpYm9od3ZidXd4d29rIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjEwNjE0MDcsImV4cCI6MjA3NjYzNzQwN30.2KsFsGYjwf_cA7Z9oglVthiaE1_jWYuQ6HMMm5UXsyo'
     );
 
-    async function confirmEmail() {
-      const { data, error } = await supabase.auth.getUser();
+    const { data: { user } } = await supabase.auth.getUser();
+    const message = document.getElementById("message");
 
-      if (error || !data?.user?.email_confirmed_at) {
-        alert("Email confirmation failed. Please try again.");
-        window.location.href = "https://alestore-official.github.io/AleRegister";
-        return;
-      }
-
-      const pendingUser = JSON.parse(localStorage.getItem("pending_user") || "{}");
-
-      if (pendingUser.email) {
-        await supabase.from("utenti").insert({
-          firstName: pendingUser.firstName,
-          lastName: pendingUser.lastName,
-          email: pendingUser.email
+    if (user?.email_confirmed_at) {
+      const pending = JSON.parse(localStorage.getItem("pending_user"));
+      if (pending && pending.email === user.email) {
+        const { error } = await supabase.from("utenti").insert({
+          first_name: pending.firstName,
+          last_name: pending.lastName,
+          email: user.email,
+          password: pending.password
         });
+        if (!error) {
+          localStorage.setItem("user_verified", "true");
+          localStorage.removeItem("pending_user");
+        } else {
+          console.error("Insert error:", error.message);
+          message.innerHTML = `<span class="error">⚠️ Account already exists. Redirecting to login...</span>`;
+        }
       }
-
-      localStorage.setItem("user_verified", "true");
-      localStorage.setItem("user_email", pendingUser.email);
-      localStorage.setItem("user_firstName", pendingUser.firstName);
-      localStorage.setItem("user_lastName", pendingUser.lastName);
-
-      alert("Email confirmed successfully!");
-      window.location.href = "https://alestore-official.github.io/AleLogin";
     }
 
-    confirmEmail();
+    setTimeout(() => {
+      window.location.href = "https://alestore-official.github.io/AleLogin";
+    }, 2000);
   </script>
 </body>
 </html>
